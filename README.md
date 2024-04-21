@@ -55,7 +55,8 @@ The Mini Data Proxy Provider project focuses on providing a secure and efficient
 - [ ] Validate the integration of dependencies and their proper utilization
 
 ### Phase 4: Documentation
-- [ ] Document any assumptions, limitations, and known issues
+- [x] Document any assumptions, limitations, and known issues
+- [ ] 
 
 ## Setup, Usage and Testing
 
@@ -91,7 +92,6 @@ The Mini Data Proxy Provider project focuses on providing a secure and efficient
 
 ## Future Enhancements
 [ ] SonarQube integration
-*[TBD]*
 
 ## License
 
