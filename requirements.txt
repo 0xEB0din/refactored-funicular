@@ -1,4 +1,4 @@
-umbral
-web3
-eth-account
-eth-keys
+umbral==0.3.0
+web3==5.17.0
+eth-account==0.12.2
+eth-keys==0.3.3

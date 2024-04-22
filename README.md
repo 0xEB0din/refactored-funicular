@@ -51,9 +51,9 @@ The Mini Data Proxy Provider project focuses on providing a secure and efficient
 
 ### Phase 1: Refactoring and Code Quality
 - [x] Modularize codebase for better organization and maintainability
-- [ ] Enhance code readability with meaningful comments, consistent naming, and type hints
+- [x] Enhance code readability with meaningful comments, consistent naming, and type hints
 - [ ] Implement robust error handling and input validation for stability and security
-- [ ] Update `requirements.txt` file with exact versions to ensure consistent and secure dependencies
+- [x] Update `requirements.txt` file with exact versions to ensure consistent and secure dependencies
 - [ ] Setup Pylint configuration to enforce code quality and adherence to coding standards
 - [ ] Create CI workflow file to facilitate the deployment when needed
 
@@ -91,7 +91,7 @@ The Mini Data Proxy Provider project focuses on providing a secure and efficient
 ### Usage Instructions
 1. Ensure you are in the project directory and the virtual environment is activated (if using one).
 2. Run the mini data proxy provider server:
-`python src/secure_data_relay.py`
+`python src/main.py`
 3. The server will start running, and you will see output indicating that it's ready to handle requests.
 4. Follow the on-screen instructions to store and consume data using the proxy re-encryption scheme.
 
