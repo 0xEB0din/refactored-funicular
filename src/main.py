@@ -1,19 +1,22 @@
 from eth_account import Account
-from encryption import encrypt, decrypt, get_private_key
-from did_document import create_did_document
 from database import store_data, consume_data
+from encryption import get_private_key
 
 
 def main() -> None:
     """
     Main function to demonstrate the usage of the app.
+
+    This function showcases the complete flow of the application,
+    including generating Ethereum keypairs, storing encrypted data,
+    and consuming encrypted data.
     """
     # Simulated in-memory database
     database = {
         'collection': {}
     }
 
-    # Example usage
+    # Example usage data
     data_to_store = "Sample DID document is here"
     access_link = "https://example.com/asset"
     data_asset_id = "123456789"
@@ -37,10 +40,12 @@ def main() -> None:
     consumer_public_key = get_private_key(relay_account).public_key.to_hex()
 
     # Store and encrypt DID document data using relayer public key
-    store_data(database, data_asset_id, data_to_store, access_link, consumer_public_key, owner_public_key)
+    store_data(database, data_asset_id, data_to_store, access_link,
+               consumer_public_key, owner_public_key)
 
     # Consume encrypted data using relayer account
-    decrypted_data, access_link = consume_data(database, data_asset_id, relay_public_key, relay_account)
+    decrypted_data, access_link = consume_data(database, data_asset_id,
+                                               relay_public_key, relay_account)
 
     print("Decrypted Data:", decrypted_data)
     print("Access Link:", access_link)

@@ -2,3 +2,4 @@ umbral==0.3.0
 web3==5.17.0
 eth-account==0.12.2
 eth-keys==0.3.3
+pylint==2.16.3
