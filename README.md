@@ -4,6 +4,7 @@ This project aims to refactor a mini data proxy provider server that enables sec
 
 ## Table of Contents
 - [Project Overview](#project-overview)
+- [Project Structure](#project-structure)
 - [Current Analysis](#current-analysis)
   - [Gaps](#gaps)
   - [Trade-offs](#trade-offs)
@@ -20,6 +21,17 @@ This project aims to refactor a mini data proxy provider server that enables sec
 ## Project Overview
 
 The Mini Data Proxy Provider project focuses on providing a secure and efficient solution for data sharing using proxy re-encryption. The provided script serves as a starting point, and the goal is to refactor and enhance it to meet the project requirements while adhering to best practices in terms of code quality, security, and performance.
+
+## Project Structure
+- `src/`: Contains the source code files.
+  - `main.py`: The main entry point of the application.
+  - `encryption.py`: Handles encryption and decryption functionality.
+  - `did_document.py`: Manages DID document creation and handling.
+  - `database.py`: Provides database storage and retrieval functionality.
+  - `token_validation.py`: Validates token burn for data access.
+- `tests/`: Contains the test files for each module.
+- `requirements.txt`: Lists the required dependencies.
+
 
 ## Current Analysis
 
@@ -38,12 +50,12 @@ The Mini Data Proxy Provider project focuses on providing a secure and efficient
 ## Implementation Plan
 
 ### Phase 1: Refactoring and Code Quality
-- [ ] Modularize codebase for better organization and maintainability
+- [x] Modularize codebase for better organization and maintainability
 - [ ] Enhance code readability with meaningful comments, consistent naming, and type hints
 - [ ] Implement robust error handling and input validation for stability and security
 - [ ] Update `requirements.txt` file with exact versions to ensure consistent and secure dependencies
 - [ ] Setup Pylint configuration to enforce code quality and adherence to coding standards
-- [ ] Setup CI workflow configuration to facilitate the deployment
+- [ ] Create CI workflow file to facilitate the deployment when needed
 
 ### Phase 2: Proxy Re-encryption Integration
 - [ ] Research and select a suitable proxy re-encryption library based on security, performance, and compatibility
@@ -56,7 +68,6 @@ The Mini Data Proxy Provider project focuses on providing a secure and efficient
 
 ### Phase 4: Documentation
 - [x] Document any assumptions, limitations, and known issues
-- [ ] 
 
 ## Setup, Usage and Testing
 
@@ -91,7 +102,7 @@ The Mini Data Proxy Provider project focuses on providing a secure and efficient
 3. The test suite will execute, and you will see the test results in the console. Any failures or errors will be reported, along with their details.
 
 ## Future Enhancements
-[ ] SonarQube integration
+[ ] SonarQube Integration
 
 ## License
 
