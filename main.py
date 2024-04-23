@@ -1,11 +1,12 @@
 from umbral import SecretKey, Signer
-from database import store_data, consume_data
-from encryption import encrypt_data, create_kfrags
+from src.database import store_data, consume_data
+from src.encryption import encrypt_data, create_kfrags
 
 
 def main() -> None:
     """
-    Main function to demonstrate the usage of the mini data proxy provider server.
+    Main function to demonstrate the usage of the mini data proxy
+    provider server.
 
     This function performs the following steps:
     1. Initializes an empty database.
@@ -33,7 +34,8 @@ def main() -> None:
 
     # Encrypt data and generate capsule, kfrags
     ciphertext, capsule = encrypt_data(data, owner_public_key)
-    kfrags = create_kfrags(owner_secret_key, consumer_public_key, owner_signer, threshold=2, shares=3)
+    create_kfrags(owner_secret_key, consumer_public_key, owner_signer,
+                  threshold=2, shares=3)
 
     # Store encrypted data
     store_data(

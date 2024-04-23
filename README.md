@@ -95,7 +95,7 @@ The Mini Data Proxy Provider project focuses on providing a secure and efficient
 ### Usage Instructions
 1. Ensure you are in the project directory and the virtual environment is activated (if using one).
 2. Run the mini data proxy provider server:
-`python src/main.py`
+`python main.py`
 3. The server will start running, and you will see output indicating that it's ready to handle requests.
 4. Follow the on-screen instructions to store and consume data using the proxy re-encryption scheme.
 

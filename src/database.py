@@ -1,8 +1,8 @@
 from typing import Dict, Any
 from umbral import SecretKey, PublicKey, Signer, Capsule, VerifiedKeyFrag
-from encryption import encrypt_data, create_kfrags, reencrypt_data, decrypt_reencrypted_data, deserialize_kfrag
-from did_document import create_did_document
-from token_validation import validate_token_burn
+from .encryption import encrypt_data, create_kfrags, reencrypt_data, decrypt_reencrypted_data, deserialize_kfrag
+from .did_document import create_did_document
+from .token_validation import validate_token_burn
 
 
 class DataStorageError(Exception):
