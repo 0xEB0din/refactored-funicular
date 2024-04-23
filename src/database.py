@@ -1,4 +1,4 @@
-from typing import Dict, Any
+from typing import Dict, Any, Tuple
 from umbral import SecretKey, PublicKey, Signer, Capsule, VerifiedKeyFrag
 from .encryption import encrypt_data, create_kfrags, reencrypt_data, decrypt_reencrypted_data, deserialize_kfrag
 from .did_document import create_did_document
@@ -7,6 +7,11 @@ from .token_validation import validate_token_burn
 
 class DataStorageError(Exception):
     """Exception raised for errors that occur during data storage."""
+    pass
+
+
+class DecryptionError(Exception):
+    """Exception raised for errors that occur during the decryption process."""
     pass
 
 
@@ -55,7 +60,7 @@ def consume_data(
     consumer_secret_key: SecretKey,
     delegating_public_key: PublicKey,
     receiving_public_key: PublicKey
-) -> tuple:
+) -> Tuple[bytes, str]:
     """
     Consume encrypted data, attempting to decrypt it using the consumer's secret key and verified capsule fragments.
 
@@ -68,32 +73,37 @@ def consume_data(
         receiving_public_key (PublicKey): Public key of the data receiver.
 
     Returns:
-        tuple: Decrypted data and access link, if successful.
+        Tuple[bytes, str]: Decrypted data and access link, if successful.
 
     Raises:
-        ValueError: If no encrypted data is found for the specified data asset ID.
+        DataStorageError: If no encrypted data is found for the specified data asset ID.
+        PermissionError: If the consumer does not have permission to access the data.
+        DecryptionError: If an error occurs during the decryption process.
     """
-    if 'collection' in database and data_asset_id in database['collection']:
-        document = database['collection'][data_asset_id]
-        did_doc = document['did_document']
-        ciphertext = bytes.fromhex(did_doc['access'][0]['data'])
-        capsule = Capsule.from_bytes(bytes.fromhex(did_doc['access'][0]['capsule']))
-        kfrags_bytes = [bytes.fromhex(hex_kfrag) for hex_kfrag in did_doc['access'][0]['kfrags']]
+    try:
+        if 'collection' in database and data_asset_id in database['collection']:
+            document = database['collection'][data_asset_id]
+            did_doc = document['did_document']
+            ciphertext = bytes.fromhex(did_doc['access'][0]['data'])
+            capsule = Capsule.from_bytes(bytes.fromhex(did_doc['access'][0]['capsule']))
+            kfrags_bytes = [bytes.fromhex(hex_kfrag) for hex_kfrag in did_doc['access'][0]['kfrags']]
 
-        verified_kfrags = [VerifiedKeyFrag.from_verified_bytes(kfrag_bytes) for kfrag_bytes in kfrags_bytes]
+            verified_kfrags = [VerifiedKeyFrag.from_verified_bytes(kfrag_bytes) for kfrag_bytes in kfrags_bytes]
 
-        cfrags = [reencrypt_data(capsule, vkfrag) for vkfrag in verified_kfrags if vkfrag]
+            cfrags = [reencrypt_data(capsule, vkfrag) for vkfrag in verified_kfrags if vkfrag]
 
-        if not cfrags:
-            raise ValueError("No valid capsule fragments generated for decryption.")
+            if not cfrags:
+                raise PermissionError("Consumer does not have permission to access the data.")
 
-        decrypted_data = decrypt_reencrypted_data(
-            receiving_sk=consumer_secret_key,
-            delegating_pk=delegating_public_key,
-            capsule=capsule,
-            verified_cfrags=cfrags,
-            ciphertext=ciphertext
-        )
-        return decrypted_data, did_doc['access'][0]['accessUrl']
-    else:
-        raise ValueError("No encrypted data found for the specified data asset ID.")
+            decrypted_data = decrypt_reencrypted_data(
+                receiving_sk=consumer_secret_key,
+                delegating_pk=delegating_public_key,
+                capsule=capsule,
+                verified_cfrags=cfrags,
+                ciphertext=ciphertext
+            )
+            return decrypted_data, did_doc['access'][0]['accessUrl']
+        else:
+            raise DataStorageError("No encrypted data found for the specified data asset ID.")
+    except (ValueError, TypeError) as e:
+        raise DecryptionError(f"Error occurred during decryption: {str(e)}") from e

@@ -1,7 +1,7 @@
 from typing import List, Tuple
 from umbral import (
     SecretKey, PublicKey, Signer, Capsule,
-    encrypt, generate_kfrags, reencrypt, decrypt_reencrypted,
+    encrypt, decrypt_original, generate_kfrags, reencrypt, decrypt_reencrypted,
     VerifiedKeyFrag, KeyFrag, VerifiedCapsuleFrag
 )
 
@@ -27,7 +27,7 @@ def create_kfrags(
     signer: Signer,
     threshold: int,
     shares: int
-) -> List[KeyFrag]:
+) -> list[VerifiedKeyFrag]:
     """
     Generates key fragments (kfrags) for proxy re-encryption.
 
@@ -41,6 +41,7 @@ def create_kfrags(
     Returns:
         List[KeyFrag]: List of generated key fragments (kfrags).
     """
+    signer = Signer(delegating_sk)  # Ensure the signer is correctly initialized
     kfrags = generate_kfrags(
         delegating_sk=delegating_sk,
         receiving_pk=receiving_pk,
@@ -48,24 +49,40 @@ def create_kfrags(
         threshold=threshold,
         shares=shares,
         sign_delegating_key=True,
-        sign_receiving_key=False
+        sign_receiving_key=True
     )
-    return [KeyFrag.from_bytes(bytes(kfrag)) for kfrag in kfrags]
+    return kfrags
 
 
-def reencrypt_data(capsule: Capsule, verified_kfrag: VerifiedKeyFrag) -> VerifiedKeyFrag:
+def reencrypt_data(capsule: Capsule, verified_kfrag: VerifiedKeyFrag) -> VerifiedCapsuleFrag:
     """
     Reencrypts a capsule using a verified key fragment.
 
     Args:
-        capsule (Capsule): The capsule associated with the ciphertext.
-        verified_kfrag (VerifiedKeyFrag): The verified key fragment used for reencryption.
+        capsule (umbral.Capsule): The capsule associated with the ciphertext.
+        verified_kfrag (umbral.VerifiedKeyFrag): The verified key fragment used for reencryption.
 
     Returns:
-        VerifiedKeyFrag: A fragment of the reencrypted capsule.
+        umbral.VerifiedCapsuleFrag: A fragment of the reencrypted capsule.
     """
     cfrag = reencrypt(capsule, verified_kfrag)
     return cfrag
+
+
+def decrypt_data(secret_key: SecretKey, capsule: Capsule, ciphertext: bytes) -> bytes:
+    """
+    Decrypts data that was encrypted directly with the recipient's public key.
+
+    Args:
+        secret_key (SecretKey): The secret key of the receiver to decrypt the data.
+        capsule (Capsule): The capsule associated with the ciphertext.
+        ciphertext (bytes): The encrypted data.
+
+    Returns:
+        bytes: The decrypted data.
+    """
+    decrypted_data = decrypt_original(secret_key, capsule, ciphertext)
+    return decrypted_data
 
 
 def decrypt_reencrypted_data(

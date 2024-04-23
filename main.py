@@ -34,8 +34,8 @@ def main() -> None:
 
     # Encrypt data and generate capsule, kfrags
     ciphertext, capsule = encrypt_data(data, owner_public_key)
-    create_kfrags(owner_secret_key, consumer_public_key, owner_signer,
-                  threshold=2, shares=3)
+    create_kfrags(owner_secret_key, consumer_public_key,
+                  owner_signer, threshold=2, shares=3)
 
     # Store encrypted data
     store_data(
@@ -60,7 +60,7 @@ def main() -> None:
         )
         print("Decrypted Data (bytes):", decrypted_data)
         print("Access Link:", access_link)
-    except Exception as e:
+    except ValueError as e:
         print(f"Error: {str(e)}")
 
 

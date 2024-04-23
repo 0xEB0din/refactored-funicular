@@ -66,9 +66,9 @@ The Mini Data Proxy Provider project focuses on providing a secure and efficient
 - [x] Integrate PyUmbral into the existing codebase for proxy re-encryption functionalities and cryptographic operations
 
 ### Phase 3: Testing and Validation
-- [ ] Develop comprehensive test cases for proxy re-encryption functionality
-- [ ] Conduct thorough testing to ensure data integrity and confidentiality
-- [ ] Validate the integration of dependencies and their proper utilization
+- [x] Develop comprehensive test cases for proxy re-encryption functionality
+- [x] Conduct thorough testing to ensure data integrity and confidentiality
+- [x] Validate the integration of dependencies and their proper utilization
 
 ### Phase 4: Documentation
 - [x] Document any assumptions, limitations, and known issues
