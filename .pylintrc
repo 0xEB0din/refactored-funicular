@@ -1,0 +1,43 @@
+[MASTER]
+disable=
+    C0114, # missing-module-docstring
+    C0115, # missing-class-docstring
+    C0116, # missing-function-docstring
+    R0913, # too-many-arguments
+    R0903, # too-few-public-methods
+ignore-paths=tests/
+
+[MESSAGES CONTROL]
+max-line-length=79
+max-args=5
+max-locals=15
+max-returns=5
+max-branches=12
+max-statements=50
+max-parents=7
+max-attributes=7
+min-public-methods=2
+
+[BASIC]
+good-names=i,j,k,ex,Run,_
+bad-names=foo,bar,baz,toto,tutu,tata
+
+[TYPECHECK]
+ignored-classes=numpy
+
+[IMPORTS]
+deprecated-modules=regsub,TERMIOS,Bastion,rexec
+
+[EXCEPTIONS]
+overgeneral-exceptions=builtins.Exception,builtins.BaseException,builtins.StandardError
+
+[DESIGN]
+max-args=5
+max-attributes=10
+max-bool-expr=5
+max-branches=12
+max-locals=15
+max-public-methods=20
+max-returns=6
+max-statements=50
+min-public-methods=2
