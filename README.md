@@ -148,7 +148,7 @@ This streamlined approach enhances data security and efficiency, demonstrating a
 - [ ] Introducing a logging mechanism 
 - [ ] Implement secure key management and storage mechanisms
 
-Feel free to hit me up on [github](0xEB0din) or [email](mailto:edge@roguebit.me) if you have any questions. Cheers!
+Feel free to hit me up on [github](https://github.com/0xEB0din) or [email](mailto:edge@roguebit.me) if you have any questions. Cheers!
 
 
 ## License
