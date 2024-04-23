@@ -15,6 +15,7 @@ This project aims to refactor a mini data proxy provider server that enables sec
   - [Phase 3: Testing and Validation](#phase-3-testing-and-validation)
   - [Phase 4: Documentation](#documentation)
 - [Setup and Usage](#setup-and-usage)
+- [How It Works](#how-it-works)
 - [Future Enhancements](#future-enhancements)
 - [License](#license)
 
@@ -60,8 +61,9 @@ The Mini Data Proxy Provider project focuses on providing a secure and efficient
 - [x] Create CI workflow file to facilitate the deployment when needed
 
 ### Phase 2: Proxy Re-encryption Integration
-- [ ] Research and select a suitable proxy re-encryption library based on security, performance, and compatibility
-- [ ] Integrate the proxy re-encryption library into the existing codebase, ensuring secure implementation of cryptographic operations
+- [x] Research and select a suitable proxy re-encryption library based on security, performance, and compatibility
+  - PyUmbral was selected for its strong security, high performance, and seamless integration capabilities
+- [x] Integrate PyUmbral into the existing codebase for proxy re-encryption functionalities and cryptographic operations
 
 ### Phase 3: Testing and Validation
 - [ ] Develop comprehensive test cases for proxy re-encryption functionality
@@ -103,8 +105,16 @@ The Mini Data Proxy Provider project focuses on providing a secure and efficient
 `python -m unittest discover tests`
 3. The test suite will execute, and you will see the test results in the console. Any failures or errors will be reported, along with their details.
 
+## How It Works
+The project utilizes **Proxy Re-Encryption (PRE)** with the [pyUmbral](https://github.com/nucypher/pyUmbral/ "pyUmbral") to facilitate secure, scalable data sharing:
+- **Encryption**: Utilizes Alice's public key for data encryption and generates re-encryption keys that allow proxy transformation of the data for Bob, without revealing its contents.
+- **Proxy Re-Encryption**: Manages data transformation at the proxy server and ensures the secure storage and retrieval of encrypted and transformed data.
+- **Decryption**: Enables Bob to securely access the re-encrypted data using his private key, ensuring data is only accessible to authorized parties.
+
+This streamlined approach enhances data security and efficiency, demonstrating advanced cryptographic implementation in a multi-user environment.
+
 ## Future Enhancements
-[ ] SonarQube Integration
+- [ ] SonarQube Integration
 
 ## License
 

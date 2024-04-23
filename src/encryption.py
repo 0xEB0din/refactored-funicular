@@ -1,79 +1,111 @@
-import ecies
-from eth_keys import KeyAPI
-from eth_keys.backends import NativeECCBackend
-from typing import Union
-from eth_typing.encoding import HexStr
-from eth_account.account import LocalAccount
-from eth_utils import is_0x_prefixed
-from web3.exceptions import InvalidAddress
-
-keys = KeyAPI(NativeECCBackend)
+from typing import List, Tuple
+from umbral import (
+    SecretKey, PublicKey, Signer, Capsule,
+    encrypt, generate_kfrags, reencrypt, decrypt_reencrypted,
+    VerifiedKeyFrag, KeyFrag, VerifiedCapsuleFrag
+)
 
 
-def get_private_key(wallet: LocalAccount) -> keys.PrivateKey:
+def encrypt_data(data: bytes, public_key: PublicKey) -> Tuple[bytes, Capsule]:
     """
-    Retrieves the private key from the given wallet.
+    Encrypts the given data using the provided public key.
 
     Args:
-        wallet (LocalAccount): Wallet instance.
+        data (bytes): Data to be encrypted.
+        public_key (PublicKey): Public key used for encryption.
 
     Returns:
-        keys.PrivateKey: Private key.
+        Tuple[bytes, Capsule]: A tuple containing the ciphertext and the capsule.
     """
-    pk = wallet.key
-    if not isinstance(pk, bytes):
-        pk = Web3.toBytes(hexstr=pk)
-    return keys.PrivateKey(pk)
+    capsule, ciphertext = encrypt(public_key, data)
+    return ciphertext, capsule
 
 
-def encrypt(
-        document: Union[HexStr, str, bytes],
-        wallet: LocalAccount = None,
-        public_key: str = None,
-) -> HexStr:
+def create_kfrags(
+    delegating_sk: SecretKey,
+    receiving_pk: PublicKey,
+    signer: Signer,
+    threshold: int,
+    shares: int
+) -> List[KeyFrag]:
     """
-    Encrypts the given document using the provided wallet or public key.
+    Generates key fragments (kfrags) for proxy re-encryption.
 
     Args:
-        document (Union[HexStr, str, bytes]): Document to be encrypted.
-        wallet (LocalAccount, optional): Wallet instance. Defaults to None.
-        public_key (str, optional): Public key. Defaults to None.
+        delegating_sk (SecretKey): Secret key of the delegating party.
+        receiving_pk (PublicKey): Public key of the receiving party.
+        signer (Signer): Signer for the delegating party.
+        threshold (int): Minimum number of kfrags required for decryption.
+        shares (int): Total number of kfrags to generate.
 
     Returns:
-        HexStr: Encrypted document.
-
-    Raises:
-        InvalidAddress: If the provided public_key is an invalid Ethereum address.
+        List[KeyFrag]: List of generated key fragments (kfrags).
     """
-    key = get_private_key(wallet).public_key.to_hex() if wallet else public_key
-
-    # Validate public_key if provided
-    if public_key and not is_0x_prefixed(public_key):
-        raise InvalidAddress("Invalid public key format. Must be a 0x-prefixed hex string.")
-
-    if isinstance(document, str):
-        document = document.encode()  # Convert string to bytes
-
-    # Encrypt the document using the provided key
-    encrypted_document = ecies.encrypt(key, document)
-
-    return encrypted_document.hex()
+    kfrags = generate_kfrags(
+        delegating_sk=delegating_sk,
+        receiving_pk=receiving_pk,
+        signer=signer,
+        threshold=threshold,
+        shares=shares,
+        sign_delegating_key=True,
+        sign_receiving_key=False
+    )
+    return [KeyFrag.from_bytes(bytes(kfrag)) for kfrag in kfrags]
 
 
-def decrypt(
-        encrypted_document: Union[HexStr, bytes],
-        provider_wallet: LocalAccount
+def reencrypt_data(capsule: Capsule, verified_kfrag: VerifiedKeyFrag) -> VerifiedKeyFrag:
+    """
+    Reencrypts a capsule using a verified key fragment.
+
+    Args:
+        capsule (Capsule): The capsule associated with the ciphertext.
+        verified_kfrag (VerifiedKeyFrag): The verified key fragment used for reencryption.
+
+    Returns:
+        VerifiedKeyFrag: A fragment of the reencrypted capsule.
+    """
+    cfrag = reencrypt(capsule, verified_kfrag)
+    return cfrag
+
+
+def decrypt_reencrypted_data(
+    receiving_sk: SecretKey,
+    delegating_pk: PublicKey,
+    capsule: Capsule,
+    verified_cfrags: List[VerifiedCapsuleFrag],
+    ciphertext: bytes
 ) -> bytes:
     """
-    Decrypts the encrypted document using the provided wallet.
+    Decrypts the re-encrypted data using the receiving party's secret key.
 
     Args:
-        encrypted_document (Union[HexStr, bytes]): Encrypted document.
-        provider_wallet (LocalAccount): Wallet instance.
+        receiving_sk (SecretKey): Secret key of the receiving party.
+        delegating_pk (PublicKey): Public key of the delegating party.
+        capsule (Capsule): Capsule used for decryption.
+        verified_cfrags (List[VerifiedCapsuleFrag]): List of verified re-encrypted capsule fragments.
+        ciphertext (bytes): Ciphertext to be decrypted.
 
     Returns:
-        bytes: Decrypted document.
+        bytes: Decrypted data.
     """
-    key = get_private_key(provider_wallet).to_hex()
-    encrypted_bytes = bytes.fromhex(encrypted_document)
-    return ecies.decrypt(key, encrypted_bytes)
+    decrypted_data = decrypt_reencrypted(
+        receiving_sk=receiving_sk,
+        delegating_pk=delegating_pk,
+        capsule=capsule,
+        verified_cfrags=verified_cfrags,
+        ciphertext=ciphertext
+    )
+    return decrypted_data
+
+
+def deserialize_kfrag(hex_kfrag: str) -> KeyFrag:
+    """
+    Deserializes a hexadecimal string back into a Kfrag object.
+
+    Args:
+        hex_kfrag (str): The hexadecimal string representing a Kfrag.
+
+    Returns:
+        KeyFrag: The deserialized Kfrag object.
+    """
+    return KeyFrag.from_bytes(bytes.fromhex(hex_kfrag))

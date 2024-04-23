@@ -1,54 +1,65 @@
-from eth_account import Account
+from umbral import SecretKey, Signer
 from database import store_data, consume_data
-from encryption import get_private_key
+from encryption import encrypt_data, create_kfrags
 
 
 def main() -> None:
     """
-    Main function to demonstrate the usage of the app.
+    Main function to demonstrate the usage of the mini data proxy provider server.
 
-    This function showcases the complete flow of the application,
-    including generating Ethereum keypairs, storing encrypted data,
-    and consuming encrypted data.
+    This function performs the following steps:
+    1. Initializes an empty database.
+    2. Generates keys for the data owner and consumer.
+    3. Defines sample data and access link.
+    4. Encrypts the data, generates capsule and kfrags.
+    5. Stores the encrypted data in the database.
+    6. Attempts to consume the encrypted data.
+    7. Prints the decrypted data and access link if successful.
     """
-    # Simulated in-memory database
-    database = {
-        'collection': {}
-    }
+    # Initialize an empty database
+    database = {'collection': {}}
 
-    # Example usage data
-    data_to_store = "Sample DID document is here"
-    access_link = "https://example.com/asset"
+    # Generate keys for data owner and consumer
+    owner_secret_key = SecretKey.random()
+    owner_public_key = owner_secret_key.public_key()
+    owner_signer = Signer(owner_secret_key)
+    consumer_secret_key = SecretKey.random()
+    consumer_public_key = consumer_secret_key.public_key()
+
+    # Define sample data and access link
     data_asset_id = "123456789"
+    data = b"Sample data"
+    access_link = "https://example.com/data"
 
-    # Generate Ethereum keypair for owner
-    owner_account = Account.create()
-    owner_private_key = owner_account.key.hex()
-    owner_address = owner_account.address
-    owner_public_key = get_private_key(owner_account).public_key.to_hex()
+    # Encrypt data and generate capsule, kfrags
+    ciphertext, capsule = encrypt_data(data, owner_public_key)
+    kfrags = create_kfrags(owner_secret_key, consumer_public_key, owner_signer, threshold=2, shares=3)
 
-    # Generate Ethereum keypair for relayer
-    relay_account = Account.create()
-    relay_address = relay_account.address
-    relay_private_key = relay_account.key.hex()
-    relay_public_key = get_private_key(relay_account).public_key.to_hex()
+    # Store encrypted data
+    store_data(
+        database,
+        data_asset_id,
+        ciphertext,
+        access_link,
+        owner_secret_key,
+        owner_signer,
+        consumer_public_key,
+    )
 
-    # Generate Ethereum keypair for consumer
-    consumer_account = Account.create()
-    consumer_address = relay_account.address
-    consumer_private_key = relay_account.key.hex()
-    consumer_public_key = get_private_key(relay_account).public_key.to_hex()
-
-    # Store and encrypt DID document data using relayer public key
-    store_data(database, data_asset_id, data_to_store, access_link,
-               consumer_public_key, owner_public_key)
-
-    # Consume encrypted data using relayer account
-    decrypted_data, access_link = consume_data(database, data_asset_id,
-                                               relay_public_key, relay_account)
-
-    print("Decrypted Data:", decrypted_data)
-    print("Access Link:", access_link)
+    # Attempt to consume encrypted data
+    try:
+        decrypted_data, access_link = consume_data(
+            database,
+            data_asset_id,
+            "consumer_address",
+            consumer_secret_key,
+            owner_public_key,
+            consumer_public_key
+        )
+        print("Decrypted Data (bytes):", decrypted_data)
+        print("Access Link:", access_link)
+    except Exception as e:
+        print(f"Error: {str(e)}")
 
 
 if __name__ == "__main__":

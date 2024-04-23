@@ -1,90 +1,99 @@
-from encryption import encrypt, decrypt
+from typing import Dict, Any
+from umbral import SecretKey, PublicKey, Signer, Capsule, VerifiedKeyFrag
+from encryption import encrypt_data, create_kfrags, reencrypt_data, decrypt_reencrypted_data, deserialize_kfrag
 from did_document import create_did_document
 from token_validation import validate_token_burn
-from typing import Dict, Any
-from eth_account.account import LocalAccount
 
 
 class DataStorageError(Exception):
-    """
-    Custom exception class for errors related to data storage operations.
-    """
+    """Exception raised for errors that occur during data storage."""
     pass
 
 
 def store_data(
-        database: Dict[str, Any],
-        data_asset_id: str,
-        data: str,
-        access_link: str,
-        encryption_key: str,
-        owner_public_key: str,
+    database: Dict[str, Any],
+    asset_id: str,
+    data: bytes,
+    access_url: str,
+    owner_key: SecretKey,
+    owner_signer: Signer,
+    consumer_key: PublicKey,
 ) -> None:
     """
-    Store encrypted data and metadata in the database with a specified data asset ID.
+    Stores encrypted data along with its metadata in a simulated in-memory database.
 
     Args:
-        database (Dict[str, Any]): In-memory database to store encrypted data and metadata.
-        data_asset_id (str): Unique identifier for the data asset.
-        data (str): Data to be encrypted and stored.
-        access_link (str): URL or link to access the data asset.
-        encryption_key (str): Ethereum public key used for encryption.
-        owner_public_key (str): Public key of the data owner.
+        database (Dict[str, Any]): The database to store the data.
+        asset_id (str): The unique identifier for the data asset.
+        data (bytes): The data to be encrypted and stored.
+        access_url (str): A URL or link where the data can be accessed.
+        owner_key (SecretKey): The secret key of the data owner for encryption.
+        owner_signer (Signer): The signer object used for signing the data.
+        consumer_key (PublicKey): The public key of the intended data consumer.
 
     Raises:
-        ValueError: If any of the required parameters are missing or invalid.
-        DataStorageError: If there was an error during the encryption or DID document creation process.
+        DataStorageError: If there is an error during the storage of data.
     """
-    if not data_asset_id or not data or not access_link or not encryption_key or not owner_public_key:
+    if not (asset_id and data and access_url and owner_key and owner_signer and consumer_key):
         raise ValueError("All parameters are required")
 
     try:
-        encrypted_data = encrypt(data, public_key=encryption_key)
-        did_doc = create_did_document(data_asset_id, access_link, encryption_key, encrypted_data, owner_public_key)
-    except Exception as e:
+        ciphertext, capsule = encrypt_data(data, owner_key.public_key())
+        kfrags = create_kfrags(owner_key, consumer_key, owner_signer, threshold=1, shares=1)
+        did_doc = create_did_document(asset_id, access_url, owner_key.public_key(), ciphertext, capsule, kfrags)
+    except ValueError as e:
         raise DataStorageError(f"Failed to store data: {str(e)}")
 
-    document = {
-        'did_document': did_doc
-    }
-
-    if 'collection' not in database or not isinstance(database['collection'], dict):
-        database['collection'] = {}
-
-    database['collection'][data_asset_id] = document
+    document = {'did_document': did_doc}
+    database.setdefault('collection', {})[asset_id] = document
 
 
 def consume_data(
-        database: Dict[str, Any],
-        data_asset_id: str,
-        consumer_address: str,
-        decryption_key: LocalAccount,
+    database: Dict[str, Any],
+    data_asset_id: str,
+    consumer_address: str,
+    consumer_secret_key: SecretKey,
+    delegating_public_key: PublicKey,
+    receiving_public_key: PublicKey
 ) -> tuple:
     """
-    Consume encrypted data from the database if the token burn is valid.
+    Consume encrypted data, attempting to decrypt it using the consumer's secret key and verified capsule fragments.
 
     Args:
-        database (Dict[str, Any]): In-memory database containing encrypted data and metadata.
-        data_asset_id (str): Unique identifier for the data asset.
-        consumer_address (str): Address of the consumer attempting to access the data.
-        decryption_key (LocalAccount): Ethereum account used for decryption.
+        database (Dict[str, Any]): Database containing stored data.
+        data_asset_id (str): Identifier for the data asset.
+        consumer_address (str): Address of the consumer.
+        consumer_secret_key (SecretKey): Secret key of the consumer.
+        delegating_public_key (PublicKey): Public key of the original data owner.
+        receiving_public_key (PublicKey): Public key of the data receiver.
 
     Returns:
-        tuple: A tuple containing the decrypted data and access link if token burn is valid.
+        tuple: Decrypted data and access link, if successful.
 
     Raises:
-        ValueError: If no encrypted data is found in the database for the specified data asset ID,
-            or if the token burn is insufficient for access.
+        ValueError: If no encrypted data is found for the specified data asset ID.
     """
-    if validate_token_burn(consumer_address, 1):
-        if 'collection' in database and data_asset_id in database['collection']:
-            document = database['collection'][data_asset_id]
-            did_doc = document['did_document']
-            encrypted_data = did_doc['access'][0]['data']
-            decrypted_data = decrypt(encrypted_data, provider_wallet=decryption_key)
-            access_link = did_doc['access'][0]['accessUrl']
-            return decrypted_data.decode(), access_link
-        else:
-            raise ValueError("No encrypted data found in the database for the specified data asset ID")
+    if 'collection' in database and data_asset_id in database['collection']:
+        document = database['collection'][data_asset_id]
+        did_doc = document['did_document']
+        ciphertext = bytes.fromhex(did_doc['access'][0]['data'])
+        capsule = Capsule.from_bytes(bytes.fromhex(did_doc['access'][0]['capsule']))
+        kfrags_bytes = [bytes.fromhex(hex_kfrag) for hex_kfrag in did_doc['access'][0]['kfrags']]
+
+        verified_kfrags = [VerifiedKeyFrag.from_verified_bytes(kfrag_bytes) for kfrag_bytes in kfrags_bytes]
+
+        cfrags = [reencrypt_data(capsule, vkfrag) for vkfrag in verified_kfrags if vkfrag]
+
+        if not cfrags:
+            raise ValueError("No valid capsule fragments generated for decryption.")
+
+        decrypted_data = decrypt_reencrypted_data(
+            receiving_sk=consumer_secret_key,
+            delegating_pk=delegating_public_key,
+            capsule=capsule,
+            verified_cfrags=cfrags,
+            ciphertext=ciphertext
+        )
+        return decrypted_data, did_doc['access'][0]['accessUrl']
     else:
-        raise ValueError("Insufficient token burn for access")
+        raise ValueError("No encrypted data found for the specified data asset ID.")
